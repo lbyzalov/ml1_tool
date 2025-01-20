@@ -84,7 +84,7 @@ def embedded_rf_selector(X, y, num_feats):
 # uses embedded lightgbm to select features
 def embedded_lgbm_selector(X, y, num_feats):
     # creates and trains embedded lgbm classifier on normalized data
-    elgbm_sel = skfs.SelectFromModel(estimator=LGBMClassifier, max_features=num_feats)
+    elgbm_sel = skfs.SelectFromModel(estimator=LGBMClassifier(), max_features=num_feats)
     x_norm = skpp.MinMaxScaler().fit_transform(X)
     elgbm_sel.fit(x_norm, y=y)
 
@@ -123,7 +123,7 @@ def preprocess_dataset(dataset_path):
 # accepted methods: pearson, chi-square, rfe, log-reg, rf, lgbm
 # optionally accepts a function to pre-process the dataset and choose number of features
 
-def autoFeatureSelector(dataset_path, methods=[], preprocess_funct=preprocess_dataset()):
+def autoFeatureSelector(dataset_path, methods=[], preprocess_funct=preprocess_dataset):
     # Parameters
     # data - dataset to be analyzed (csv file)
     # methods - various feature selection methods we outlined before, use them all here (list)
