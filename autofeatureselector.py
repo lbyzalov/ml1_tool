@@ -1,5 +1,6 @@
 # python module to auto-select features for an ML algorithm
 
+import sys
 import numpy as np
 import pandas as pd
 import sklearn.feature_selection as skfs
@@ -7,6 +8,9 @@ import sklearn.preprocessing as skpp
 import sklearn.linear_model as sklm
 import sklearn.ensemble as ske
 from lightgbm import LGBMClassifier
+
+# all selector functions accept pandas dataframes X and y (y must be 1-d) 
+# as well as a int for max num. of features to select
 
 # uses pearson correlation to select features
 def cor_selector(X, y, num_feats):
@@ -89,3 +93,90 @@ def embedded_lgbm_selector(X, y, num_feats):
     embedded_lgbm_feat = X.loc[:,embedded_lgbm_support].columns.to_list()
     
     return embedded_lgbm_support, embedded_lgbm_feat
+
+
+# default pre-processing function
+# for pre-processing a specific dataset
+# will change this for something generic later
+def preprocess_dataset(dataset_path):
+    # selects X and y
+    data = pd.read_csv(dataset_path)
+    numcols = ['Overall', 'Crossing','Finishing',  'ShortPassing',  'Dribbling','LongPassing', 'BallControl', 'Acceleration','SprintSpeed', 'Agility',  'Stamina','Volleys','FKAccuracy','Reactions','Balance','ShotPower','Strength','LongShots','Aggression','Interceptions']
+    catcols = ['Preferred Foot','Position','Body Type','Nationality','Weak Foot']
+    data = data[numcols+catcols]
+    traindf = pd.concat([data[numcols], pd.get_dummies(data[catcols])],axis=1)
+    features = traindf.columns
+
+    traindf = traindf.dropna()
+    traindf = pd.DataFrame(traindf,columns=features)
+    
+    y = traindf['Overall']>=87
+    X = traindf.copy()
+    del X['Overall']
+
+    # number of features to select
+    num_feats = 30
+    return X, y, num_feats
+
+# auto-selector accepts the dataset path as a string (url or file path)
+# as well as a list of strings to select methods
+# accepted methods: pearson, chi-square, rfe, log-reg, rf, lgbm
+# optionally accepts a function to pre-process the dataset and choose number of features
+
+def autoFeatureSelector(dataset_path, methods=[], preprocess_funct=preprocess_dataset()):
+    # Parameters
+    # data - dataset to be analyzed (csv file)
+    # methods - various feature selection methods we outlined before, use them all here (list)
+    
+    # preprocessing
+    X, y, num_feats = preprocess_funct(dataset_path)
+    features = list(X.columns)
+    fn = len(features)
+    
+    # Run every method we outlined above from the methods list and collect returned best features from every method
+    if 'pearson' in methods:
+        cor_support, cor_feature = cor_selector(X, y,num_feats)
+        for i in range(fn):
+            if not cor_support[i]:
+                features[i] = None
+    if 'chi-square' in methods:
+        chi_support, chi_feature = chi_squared_selector(X, y,num_feats)
+        for i in range(fn):
+            if not chi_support[i]:
+                features[i] = None
+    if 'rfe' in methods:
+        rfe_support, rfe_feature = rfe_selector(X, y,num_feats)
+        for i in range(fn):
+            if not rfe_support[i]:
+                features[i] = None
+    if 'log-reg' in methods:
+        embedded_lr_support, embedded_lr_feature = embedded_log_reg_selector(X, y, num_feats)
+        for i in range(fn):
+            if not embedded_lr_support[i]:
+                features[i] = None
+    if 'rf' in methods:
+        embedded_rf_support, embedded_rf_feature = embedded_rf_selector(X, y, num_feats)
+        for i in range(fn):
+            if not embedded_rf_support[i]:
+                features[i] = None
+    if 'lgbm' in methods:
+        embedded_lgbm_support, embedded_lgbm_feature = embedded_lgbm_selector(X, y, num_feats)
+        for i in range(fn):
+            if not embedded_lgbm_support[i]:
+                features[i] = None
+    
+    
+    # Combine all the above feature list and count the maximum set of features that got selected by all methods
+    best_features = list(filter(None, features))
+    
+    return best_features
+
+# main function
+def main():
+    path = input('Enter path of dataset:')
+    methods = ['pearson', 'chi-square', 'rfe', 'log-reg', 'rf', 'lgbm']
+    print(autoFeatureSelector(path, methods))
+    return 0
+
+if __name__ == '__main__':
+    sys.exit(main())
