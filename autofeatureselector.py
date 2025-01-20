@@ -5,6 +5,8 @@ import pandas as pd
 import sklearn.feature_selection as skfs
 import sklearn.preprocessing as skpp
 import sklearn.linear_model as sklm
+import sklearn.ensemble as ske
+from lightgbm import LGBMClassifier
 
 # uses pearson correlation to select features
 def cor_selector(X, y, num_feats):
@@ -48,3 +50,42 @@ def rfe_selector(X, y, num_feats):
     rfe_feat = X.loc[:,rfe_support].columns.to_list()
     
     return rfe_support, rfe_feat
+
+# uses an embedded L1 algorithm to select features
+def embedded_log_reg_selector(X, y, num_feats):
+    # creates and trains embedded logistic regression on normalized data
+    elr_sel = skfs.SelectFromModel(estimator=sklm.LogisticRegression(max_iter=100), max_features=num_feats)
+    x_norm = skpp.MinMaxScaler().fit_transform(X)
+    elr_sel.fit(X, y=y)
+
+    # gets support and feature lists
+    embedded_lr_support = elr_sel.get_support()
+    embedded_lr_feat = X.loc[:,embedded_lr_support].columns.to_list()
+    
+    return embedded_lr_support, embedded_lr_feat
+
+# uses an embedded random forest classifier to select features
+def embedded_rf_selector(X, y, num_feats):
+    # creates and trains embedded rf classifier on normalized data
+    erf_sel = skfs.SelectFromModel(estimator=ske.RandomForestClassifier(n_estimators=100, min_samples_split=5), max_features=num_feats)
+    x_norm = skpp.MinMaxScaler().fit_transform(X)
+    erf_sel.fit(X, y=y)
+
+    # gets support and feature lists
+    embedded_rf_support = erf_sel.get_support()
+    embedded_rf_feat = X.loc[:,embedded_rf_support].columns.to_list()
+    
+    return embedded_rf_support, embedded_rf_feat
+
+# uses embedded lightgbm to select features
+def embedded_lgbm_selector(X, y, num_feats):
+    # creates and trains embedded lgbm classifier on normalized data
+    elgbm_sel = SelectFromModel(estimator=RandomForestClassifier(n_estimators=100, min_samples_split=5), max_features=num_feats)
+    x_norm = MinMaxScaler().fit_transform(X)
+    elgbm_sel.fit(X, y=y)
+
+    # gets support and feature lists
+    embedded_lgbm_support = elgbm_sel.get_support()
+    embedded_lgbm_feat = X.loc[:,embedded_lgbm_support].columns.to_list()
+    
+    return embedded_lgbm_support, embedded_lgbm_feat
