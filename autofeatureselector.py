@@ -43,7 +43,7 @@ def rfe_selector(X, y, num_feats):
     # creates and trains rfe on normalized data
     rfe_sel = skfs.RFE(estimator=sklm.LogisticRegression(max_iter=100), n_features_to_select=num_feats, step=0.05)
     x_norm = skpp.MinMaxScaler().fit_transform(X)
-    rfe_sel.fit(X, y=y)
+    rfe_sel.fit(x_norm, y=y)
 
     # gets support and feature lists
     rfe_support = rfe_sel.get_support()
@@ -56,7 +56,7 @@ def embedded_log_reg_selector(X, y, num_feats):
     # creates and trains embedded logistic regression on normalized data
     elr_sel = skfs.SelectFromModel(estimator=sklm.LogisticRegression(max_iter=100), max_features=num_feats)
     x_norm = skpp.MinMaxScaler().fit_transform(X)
-    elr_sel.fit(X, y=y)
+    elr_sel.fit(x_norm, y=y)
 
     # gets support and feature lists
     embedded_lr_support = elr_sel.get_support()
@@ -69,7 +69,7 @@ def embedded_rf_selector(X, y, num_feats):
     # creates and trains embedded rf classifier on normalized data
     erf_sel = skfs.SelectFromModel(estimator=ske.RandomForestClassifier(n_estimators=100, min_samples_split=5), max_features=num_feats)
     x_norm = skpp.MinMaxScaler().fit_transform(X)
-    erf_sel.fit(X, y=y)
+    erf_sel.fit(x_norm, y=y)
 
     # gets support and feature lists
     embedded_rf_support = erf_sel.get_support()
@@ -80,9 +80,9 @@ def embedded_rf_selector(X, y, num_feats):
 # uses embedded lightgbm to select features
 def embedded_lgbm_selector(X, y, num_feats):
     # creates and trains embedded lgbm classifier on normalized data
-    elgbm_sel = SelectFromModel(estimator=RandomForestClassifier(n_estimators=100, min_samples_split=5), max_features=num_feats)
-    x_norm = MinMaxScaler().fit_transform(X)
-    elgbm_sel.fit(X, y=y)
+    elgbm_sel = skfs.SelectFromModel(estimator=LGBMClassifier, max_features=num_feats)
+    x_norm = skpp.MinMaxScaler().fit_transform(X)
+    elgbm_sel.fit(x_norm, y=y)
 
     # gets support and feature lists
     embedded_lgbm_support = elgbm_sel.get_support()
